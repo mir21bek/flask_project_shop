@@ -4,7 +4,7 @@ from datetime import timedelta
 from app.extensions import db
 from .models import User, Role, RoleEnum, GroupEnum, Group, Permission, PermissionEnum, PermissionGroup
 
-user_blueprint = Blueprint('user', __name__)
+user_blueprint = Blueprint('users', __name__)
 
 @user_blueprint.route("/admin-create", methods=["POST"])
 def create_admin():

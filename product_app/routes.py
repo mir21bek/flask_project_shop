@@ -5,7 +5,7 @@ from user_app.models import User, RoleEnum
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 
-product_blueprint = Blueprint('product', __name__)
+product_blueprint = Blueprint('products', __name__)
 
 @product_blueprint.route("/categories", methods=["POST"])
 def create_cat():
