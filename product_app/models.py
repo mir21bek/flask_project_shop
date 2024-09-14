@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from app.extensions import db
 
 
@@ -47,4 +48,3 @@ class Product(db.Model):
             "price": self.price,
             "created_at": self.created_at.isoformat(),
         }
-

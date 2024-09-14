@@ -1,11 +1,13 @@
 from flask import Blueprint, jsonify, request
-from app.extensions import db
-from .models import Category, Product
-from user_app.models import User, RoleEnum
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
+from app.extensions import db
+from users_app.models import RoleEnum, User
 
-product_blueprint = Blueprint('products', __name__)
+from .models import Category, Product
+
+product_blueprint = Blueprint("products", __name__)
+
 
 @product_blueprint.route("/categories", methods=["POST"])
 def create_cat():
@@ -129,4 +131,3 @@ def get_products_by_category(category_id):
     products_list = [product.to_dict() for product in products]
 
     return jsonify({"category": category.name, "products": products_list}), 200
-

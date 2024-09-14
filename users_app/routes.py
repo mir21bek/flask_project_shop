@@ -1,10 +1,23 @@
+from datetime import timedelta
+
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token
-from datetime import timedelta
-from app.extensions import db
-from .models import User, Role, RoleEnum, GroupEnum, Group, Permission, PermissionEnum, PermissionGroup
 
-user_blueprint = Blueprint('users', __name__)
+from app.extensions import db
+
+from .models import (
+    Group,
+    GroupEnum,
+    Permission,
+    PermissionEnum,
+    PermissionGroup,
+    Role,
+    RoleEnum,
+    User,
+)
+
+user_blueprint = Blueprint("users", __name__)
+
 
 @user_blueprint.route("/admin-create", methods=["POST"])
 def create_admin():
@@ -22,35 +35,44 @@ def create_admin():
     user.set_password(data["password"])
 
     try:
-        # Начало транзакции
-        admin_role = Role.query.filter_by(name=RoleEnum.ADMIN).first()
-        if not admin_role:
-            admin_role = Role(name=RoleEnum.ADMIN)
-            db.session.add(admin_role)
+        # Отключаем автофлеш для избежания ошибки
+        with db.session.no_autoflush:
+            # Добавление пользователя в сессию
+            db.session.add(user)
 
-        admin_group = Group.query.filter_by(name=GroupEnum.ADMIN).first()
-        if not admin_group:
-            admin_group = Group(name=GroupEnum.ADMIN)
-            db.session.add(admin_group)
+            # Получаем роль администратора
+            admin_role = Role.query.filter_by(name=RoleEnum.ADMIN).first()
+            if not admin_role:
+                admin_role = Role(name=RoleEnum.ADMIN)
+                db.session.add(admin_role)
 
-        user.role = admin_role
-        user.group = admin_group
+            # Получаем группу администратора
+            admin_group = Group.query.filter_by(name=GroupEnum.ADMIN).first()
+            if not admin_group:
+                admin_group = Group(name=GroupEnum.ADMIN)
+                db.session.add(admin_group)
 
-        permissions = [
-            Permission(name=PermissionEnum.CREATE_UPDATE),
-            Permission(name=PermissionEnum.DELETE),
-            Permission(name=PermissionEnum.LIST_VIEW),
-        ]
+            # Назначаем роль и группу пользователю
+            user.role = admin_role
+            user.group = admin_group
 
-        for perm in permissions:
-            existing_perm = Permission.query.filter_by(name=perm.name).first()
-            if not existing_perm:
-                db.session.add(perm)
-            else:
-                permissions[permissions.index(perm)] = existing_perm
+            permissions = [
+                Permission(name=PermissionEnum.CREATE_UPDATE),
+                Permission(name=PermissionEnum.DELETE),
+                Permission(name=PermissionEnum.LIST_VIEW),
+            ]
 
-        db.session.flush()  # Flush to ensure permissions have IDs before using them
+            for perm in permissions:
+                existing_perm = Permission.query.filter_by(name=perm.name).first()
+                if not existing_perm:
+                    db.session.add(perm)
+                else:
+                    permissions[permissions.index(perm)] = existing_perm
 
+        # Осуществляем явный flush для всех изменений
+        db.session.flush()
+
+        # Сохраняем связи разрешений и групп
         for perm in permissions:
             if not PermissionGroup.query.filter_by(
                 group_id=admin_group.id, permission_id=perm.id
@@ -60,8 +82,7 @@ def create_admin():
                 )
                 db.session.add(group_perm)
 
-        db.session.add(user)
-        db.session.commit()  # Подтверждение транзакции
+        db.session.commit()  # Подтверждаем транзакцию
 
     except Exception as e:
         db.session.rollback()  # Откат транзакции в случае ошибки
@@ -71,6 +92,8 @@ def create_admin():
         jsonify({"Message": "User created successfully", "user": user.to_dict()}),
         201,
     )
+
+
 
 
 @user_blueprint.route("/buyer-create", methods=["POST"])
@@ -153,7 +176,7 @@ def login():
     return jsonify(access_token=access_token), 201
 
 
-@user_blueprint.route("/users", methods=["GET"])
+@user_blueprint.route("/all-users", methods=["GET"])
 def get_user():
     users = User.query.all()
     return ([user.to_dict() for user in users]), 200

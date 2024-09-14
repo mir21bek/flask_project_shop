@@ -1,7 +1,9 @@
 from datetime import datetime
-from werkzeug.security import check_password_hash, generate_password_hash
-from app.extensions import db
 from enum import Enum
+
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from app.extensions import db
 
 
 class RoleEnum(Enum):
