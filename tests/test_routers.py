@@ -1,3 +1,4 @@
+from cgitb import reset
 from datetime import datetime
 
 import pytest
@@ -155,3 +156,41 @@ def test_login_user(client, app):
     assert response.status_code == 201
     json_data = response.get_json()
     assert "access_token" in json_data
+
+
+def test_get_user(client):
+    user_role = Role.query.filter_by(name=RoleEnum.BUYER).first()
+    user_group = Group.query.filter_by(name=GroupEnum.BUYER).first()
+
+    if not user_role:
+        user_role = Role(name=RoleEnum.BUYER)
+        db.session.add(user_role)
+    if not user_group:
+        user_group = Group(name=GroupEnum.BUYER)
+        db.session.add(user_group)
+    db.session.commit()
+
+    data = [
+        {"username": "user1", "email": "user1@mail.ru", "password": "user12345"},
+        {"username": "user2", "email": "user2@mail.ru", "password": "user12345"},
+        {"username": "user3", "email": "user3@mail.ru", "password": "user12345"},
+
+    ]
+
+    for user_data in data:
+        user  = User(username=user_data["username"], email=user_data["email"], role_id=user_role.id, group_id=user_group.id)
+        user.set_password(user_data["password"])
+        db.session.add(user)
+    db.session.commit()
+
+    response = client.get("/users/all-users")
+
+    assert response.status_code == 200
+    json_data = response.get_json()
+
+    assert len(json_data) == len(data)
+
+    for users_data in data:
+        assert any(user["username"] == users_data["username"] for user in json_data)
+        assert any(user["email"] == users_data["email"] for user in json_data)
+
