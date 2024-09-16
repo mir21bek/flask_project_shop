@@ -1,11 +1,8 @@
-from cgitb import reset
-from datetime import datetime
-
 import pytest
 
 from app import create_app
 from app.extensions import db
-from users_app.models import GroupEnum, Group, RoleEnum, Role, User
+from models.user_models import GroupEnum, Group, RoleEnum, Role, User
 
 
 @pytest.fixture()
