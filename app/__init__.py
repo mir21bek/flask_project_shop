@@ -3,9 +3,9 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
 from app.extensions import db, migrate
-from app_config.config import Config
-from product_app.routes import product_blueprint
-from users_app.routes import user_blueprint
+from app.settings import Config
+from routes.product_routes import product_blueprint
+from routes.user_routes import user_blueprint
 
 
 def create_app():
