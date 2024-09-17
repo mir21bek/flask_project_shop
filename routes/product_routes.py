@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
+import xlsxwriter
+
 from app.extensions import db
 from models.user_models import RoleEnum, User
 
@@ -102,6 +104,9 @@ def create_product():
     )
     db.session.add(product)
     db.session.commit()
+
+    write_product_to_xlsx(product)
+
     return (
         jsonify(
             {"Message": "Product create successfully", "product": product.to_dict()}
@@ -109,6 +114,24 @@ def create_product():
         201,
     )
 
+def write_product_to_xlsx(product):
+    file_name = "product_list.xlsx"
+    workbook = xlsxwriter.Workbook(file_name)
+    worksheet = workbook.add_worksheet()
+
+    headers = ["Product ID", "Name", "Title", "Price", "Category ID", "Created_at"]
+
+    for col_num, header in enumerate(headers):
+        worksheet.write(0, col_num, header)
+
+    worksheet.write(1, 0, product.id)
+    worksheet.write(1, 1, product.name)
+    worksheet.write(1, 2, product.title)
+    worksheet.write(1, 3, product.price)
+    worksheet.write(1, 4, product.category_id)
+    worksheet.write(1, 5, product.created_at)
+
+    workbook.close()
 
 @product_blueprint.route("/product-list", methods=["GET"])
 def product_list():
