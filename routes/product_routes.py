@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
@@ -141,12 +143,16 @@ def write_product_to_xlsx(product):
         cell = worksheet.cell(row=1, column=col_num)
         cell.font = font_size
 
+    if isinstance(product.created_at, str):
+        product.created_at = datetime.strptime(product.created_at, "%Y-%m-%d %H:%M")
+
     worksheet.append([
             product.id,
             product.name,
             product.title,
             product.price,
-            product.category_id
+            product.category_id,
+            product.created_at
         ])
 
     workbook.save(file_name)
