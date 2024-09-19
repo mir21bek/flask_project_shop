@@ -163,3 +163,4 @@ cython_debug/
 .env/
 fls/
 migrations/
+xlsx_files/

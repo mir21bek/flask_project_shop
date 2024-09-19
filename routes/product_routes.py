@@ -1,7 +1,9 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-import xlsxwriter
+import openpyxl
+from openpyxl.styles import Font
+import os
 
 from app.extensions import db
 from models.user_models import RoleEnum, User
@@ -115,23 +117,41 @@ def create_product():
     )
 
 def write_product_to_xlsx(product):
-    file_name = "product_list.xlsx"
-    workbook = xlsxwriter.Workbook(file_name)
-    worksheet = workbook.add_worksheet()
+    file_name = "xlsx_files/product_list.xlsx"
 
     headers = ["Product ID", "Name", "Title", "Price", "Category ID", "Created_at"]
 
-    for col_num, header in enumerate(headers):
-        worksheet.write(0, col_num, header)
+    if os.path.exists(file_name):
+        workbook = openpyxl.load_workbook(file_name)
+        worksheet = workbook.active
+    else:
+        workbook = openpyxl.Workbook()
+        worksheet = workbook.active
 
-    worksheet.write(1, 0, product.id)
-    worksheet.write(1, 1, product.name)
-    worksheet.write(1, 2, product.title)
-    worksheet.write(1, 3, product.price)
-    worksheet.write(1, 4, product.category_id)
-    worksheet.write(1, 5, product.created_at)
+        worksheet.append(headers)
 
+    worksheet.column_dimensions['A'].width = 8  # Product ID
+    worksheet.column_dimensions['B'].width = 25  # Name
+    worksheet.column_dimensions['C'].width = 40  # Title
+    worksheet.column_dimensions['D'].width = 8  # Price
+    worksheet.column_dimensions['E'].width = 8  # Category ID
+    worksheet.column_dimensions['F'].width = 20  # Created_at
+    font_size = Font(bold=True)
+    for col_num in range(1, len(headers) + 1):
+        cell = worksheet.cell(row=1, column=col_num)
+        cell.font = font_size
+
+    worksheet.append([
+            product.id,
+            product.name,
+            product.title,
+            product.price,
+            product.category_id
+        ])
+
+    workbook.save(file_name)
     workbook.close()
+
 
 @product_blueprint.route("/product-list", methods=["GET"])
 def product_list():
