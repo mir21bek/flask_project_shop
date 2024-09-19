@@ -1,17 +1,22 @@
+import os
+
 import pytest
+import tempfile
 
 from app import create_app
 from app.extensions import db
 from models.user_models import GroupEnum, Group, RoleEnum, Role, User
+from models.product_models import Product, Category
 
 
 @pytest.fixture()
 def app():
+    db_fd, db_path = tempfile.mkstemp()
     app = create_app()
     app.config.update(
         {
             "TESTING": True,
-            "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
+            "SQLALCHEMY_DATABASE_URI": f"sqlite:///{db_path}",
         }
     )
     with app.app_context():
@@ -38,6 +43,9 @@ def app():
 
     with app.app_context():
         db.drop_all()
+
+    os.close(db_fd)
+    os.unlink(db_path)
 
 
 @pytest.fixture()
@@ -190,4 +198,30 @@ def test_get_user(client):
     for users_data in data:
         assert any(user["username"] == users_data["username"] for user in json_data)
         assert any(user["email"] == users_data["email"] for user in json_data)
+
+
+def test_create_product(app, client):
+    login_data = {
+        "email": "user@mail.ru",
+        "password": "user12345",
+    }
+    login_response = client.post("/users/login", json=login_data)
+    assert login_response.status_code == 200
+    json_login_data = login_response.get_json()
+    token = json_login_data["access_token"]
+    print(token)
+
+    data = {
+        "category_id": 1,
+        "name": "Samsung",
+        "title": "cool phone",
+        "price": 300
+    }
+
+    response = client.post("/products/product-create", json=data, headers={"Authorization": f"Bearer Token {token}"})
+
+    assert response.status_code == 201
+    json_data = response.get_json()
+    assert json_data["Message"] == "Product create successfully"
+    assert "product" in json_data
 
